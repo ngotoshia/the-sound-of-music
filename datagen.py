@@ -41,14 +41,8 @@ class DataGenerator(Sequence):
             cur_x = np.load(os.path.join(self.directory,f), mmap_mode='r')
             cur_y = np.load(os.path.join(self.directory,self.corresponding_y(f)), mmap_mode='r')
             size = cur_x.shape[0]
-            print(size)
             hf_win = self.window_size//2
-            print(hf_win)
             for i in range(hf_win, size, self.sequence_len):
-                if( i + self.sequence_len > size):
-                    print(str(i) + 'breaking')
-                    # return
-                    yield None
                 cur_x_sequence = cur_x[i - hf_win : i + self.sequence_len + hf_win]
                 cur_y_sequence =  cur_y[i - hf_win: (i - hf_win) + self.sequence_len]
                 x_seq = []
@@ -61,36 +55,36 @@ class DataGenerator(Sequence):
                     y_seq.append(note)
                 x_seq=np.expand_dims(np.array(x_seq), axis = 0)
                 y_seq=np.expand_dims(np.array(y_seq), axis = 0)
-                print(x_seq.shape)
-                print(y_seq.shape)
                 yield x_seq, y_seq
     
 
     def __getitemtest__(self):
+        self.cur_test_y_files = []
         for f in self.x_files:
             cur_x = np.load(os.path.join(self.directory,f), mmap_mode='r')
+            self.cur_test_y_files.append(self.corresponding_y(f))
             size = cur_x.shape[0]
-            print(size)
             hf_win = self.window_size // 2
-            print(hf_win)
             for i in range(hf_win, size, self.sequence_len):
                 if( i + self.sequence_len > size):
                     print('one up')
                 cur_x_sequence = cur_x[i - hf_win : i + self.sequence_len + hf_win]
-                print(i + self.sequence_len + hf_win)
                 x_seq = []
                 for j in range(self.sequence_len):
                     frame_window = cur_x_sequence[j : j + self.window_size]
                     frame_window =  np.expand_dims(frame_window, axis = 2)
                     x_seq.append(frame_window)
-                    if(i + self.sequence_len + hf_win == 4806):
-                        print(frame_window.shape)
-                        print(len(x_seq))
                 x_seq=np.expand_dims(np.array(x_seq), axis = 0)
-                print(x_seq.shape)
                 yield x_seq
 
-                
+
+    def __getitemtestlabels__(self):
+        for f in self.cur_test_y_files:
+            cur_y = np.load(os.path.join(self.directory,f), mmap_mode='r')
+            size = cur_y.shape[0]
+            yield np.array(cur_y)
+
+
 
     def corresponding_y(self, x_filename):
         y_filename = 'y' + x_filename[1:]
