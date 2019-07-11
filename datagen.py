@@ -37,25 +37,32 @@ class DataGenerator(Sequence):
         return self.data_size // self.sequence_len
 
     def __getitem__(self):
-        for f in self.x_files:
-            cur_x = np.load(os.path.join(self.directory,f), mmap_mode='r')
-            cur_y = np.load(os.path.join(self.directory,self.corresponding_y(f)), mmap_mode='r')
-            size = cur_x.shape[0]
-            hf_win = self.window_size//2
-            for i in range(hf_win, size, self.sequence_len):
-                cur_x_sequence = cur_x[i - hf_win : i + self.sequence_len + hf_win]
-                cur_y_sequence =  cur_y[i - hf_win: (i - hf_win) + self.sequence_len]
-                x_seq = []
-                y_seq = []
-                for j in range(self.sequence_len):
-                    frame_window = cur_x_sequence[j : j + self.window_size]
-                    frame_window =  np.expand_dims(frame_window, axis = 2)
-                    note = cur_y_sequence[j]
-                    x_seq.append(frame_window)
-                    y_seq.append(note)
-                x_seq=np.expand_dims(np.array(x_seq), axis = 0)
-                y_seq=np.expand_dims(np.array(y_seq), axis = 0)
-                yield x_seq, y_seq
+        print('starting')
+        while True:
+            for f in self.x_files:
+                cur_x = np.load(os.path.join(self.directory,f), mmap_mode='r')
+                cur_y = np.load(os.path.join(self.directory,self.corresponding_y(f)), mmap_mode='r')
+                size = cur_x.shape[0]
+                hf_win = self.window_size//2
+                itr = 0
+                for i in range(hf_win, size, self.sequence_len):
+                    if( i + self.sequence_len > size):
+                        break
+                        yield
+                    cur_x_sequence = cur_x[i - hf_win : i + self.sequence_len + hf_win]
+                    cur_y_sequence =  cur_y[i - hf_win: (i - hf_win) + self.sequence_len]
+                    x_seq = []
+                    y_seq = []
+                    for j in range(self.sequence_len):
+                        frame_window = cur_x_sequence[j : j + self.window_size]
+                        frame_window =  np.expand_dims(frame_window, axis = 2)
+                        note = cur_y_sequence[j]
+                        x_seq.append(frame_window)
+                        y_seq.append(note)
+                    x_seq=np.expand_dims(np.array(x_seq), axis = 0)
+                    y_seq=np.expand_dims(np.array(y_seq), axis = 0)
+                    yield x_seq, y_seq
+        print('ending')
     
 
     def __getitemtest__(self):
