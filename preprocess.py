@@ -11,16 +11,59 @@ import constants
 import os
 import sys
 
-midi_path_test = 'data/test/MIDI-Unprocessed_041_PIANO041_MID--AUDIO-split_07-06-17_Piano-e_1-01_wav--1.midi'
-wav_path_test = 'data/test/MIDI-Unprocessed_041_PIANO041_MID--AUDIO-split_07-06-17_Piano-e_1-01_wav--1.wav'
-
-midi_path = 'data/train/MIDI-Unprocessed_R1_D1-1-8_mid--AUDIO-from_mp3_01_R1_2015_wav--1.midi'
-wav_path = 'data/train/MIDI-Unprocessed_R1_D1-1-8_mid--AUDIO-from_mp3_01_R1_2015_wav--1.wav'
-
-
 def get_corresponding_y(x_f):
     y_file = x_f.split('.')[0] + '.midi'
     return y_file
+
+def preprocess_one_file_wav(x_file, ctr, directory=None):
+    audio, sample_rate = libr.load(x_file, sr=16000)
+    ipd.Audio(audio, rate=sample_rate)
+    proc_input = libr.cqt(audio, window='hamming', sr=sample_rate, hop_length=512, fmin=constants.FMIN, n_bins=constants.N_BINS, bins_per_octave=constants.BINS_P_OCTAVE)
+    proc_input = np.abs(proc_input)
+    proc_input= proc_input.T
+
+
+    mean = np.mean(proc_input, axis=0)
+    std = np.std(proc_input, axis=0)
+    proc_input_norm = proc_input
+
+    x_out = proc_input_norm
+
+    times = libr.frames_to_time(np.arange(proc_input_norm.shape[0]), sr=sample_rate, hop_length=512)
+
+    to_pad =  int(np.ceil(x_out.shape[0]/constants.SEQUENCE_SIZE) * constants.SEQUENCE_SIZE - x_out.shape[0])
+    x_out = np.append(x_out, np.zeros((to_pad, x_out.shape[1])), axis = 0)
+    pad_size = constants.CONTEXT_WINDOW_SIZE // 2
+    x_out = np.append(x_out, np.zeros((pad_size, x_out.shape[1])), axis = 0)
+    x_out = np.insert(x_out, 0, np.zeros((pad_size,  x_out.shape[1])), axis = 0)
+
+    if directory == None:
+        if not os.path.exists('./processed'):
+            os.mkdir ('./processed')
+        save_dir = './processed'
+    else:
+        save_dir = directory
+    x_file_path = os.path.join(save_dir, 'x_{}.npy'.format(ctr))
+    np.save(x_file_path, x_out)
+    return x_file_path
+
+
+def preprocess_one_file_midi(y_file, ctr):
+    pm = pretty_midi.PrettyMIDI(y_file)
+
+    piano_roll = pm.get_piano_roll(times=times)[constants.MIN_MIDI:constants.MAX_MIDI+1].T
+    piano_roll[piano_roll > 0] = 1
+    y_out = piano_roll
+
+    to_pad =  int(np.ceil(x_out.shape[0]/constants.SEQUENCE_SIZE) * constants.SEQUENCE_SIZE - x_out.shape[0])
+    y_out = np.append(y_out, np.zeros((to_pad, y_out.shape[1])), axis = 0)
+    print(np.zeros((to_pad, x_out.shape[1])).shape)
+
+    save_dir = None
+    save_dir = './tmp'
+    y_file_path = os.path.join(save_dir, 'y_{}.npy'.format(ctr))
+    np.save(y_file_path, y_out)
+    return y_file_path
 
 
 def preprocess_one_file(x_file, y_file, ctr, istrain):
@@ -86,14 +129,14 @@ def preprocess_one_file(x_file, y_file, ctr, istrain):
         save_dir = constants.TRAIN_PROCESSED_DIR
     else:
         save_dir = constants.TEST_PROCESSED_DIR
-    x_file_path = os.path.join(save_dir, 'x_{}'.format(ctr))
-    y_file_path = os.path.join(save_dir, 'y_{}'.format(ctr))
+    x_file_path = os.path.join(save_dir, 'x_{}.npy'.format(ctr))
+    y_file_path = os.path.join(save_dir, 'y_{}.npy'.format(ctr))
     np.save(x_file_path, x_out)
     np.save(y_file_path, y_out)
 
     print('saved {}'.format(x_file_path))
     print('saved {}'.format(y_file_path))
-
+    return x_file_path, y_file_path
 
 
 def preprocess_files(dirname, x_files, istrain=True):

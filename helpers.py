@@ -49,7 +49,6 @@ def piano_roll_to_pretty_midi(piano_roll, fs=100, program=0):
                 note_on_time[note] = time
                 prev_velocities[note] = velocity
         else:
-            print('{} {} {} {} '.format(prev_velocities[note],note,note_on_time[note], time))
             pm_note = pretty_midi.Note(
                 velocity=prev_velocities[note] * 127,
                 pitch=note,

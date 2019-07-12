@@ -92,7 +92,6 @@ class DataGenerator(Sequence):
             yield np.array(cur_y)
 
 
-
     def corresponding_y(self, x_filename):
         y_filename = 'y' + x_filename[1:]
         if y_filename in self.y_files:
@@ -100,5 +99,31 @@ class DataGenerator(Sequence):
             return y_filename
         else:
             raise Exception
+
+
+    @staticmethod
+    def __genfileforinference__(filename, window_size, sequence_len):
+        cur_x = np.load(filename, mmap_mode='r')
+        size = cur_x.shape[0]
+        hf_win = window_size // 2
+        for i in range(hf_win, size, sequence_len):
+            if( i + sequence_len > size):
+                print('one up')
+            cur_x_sequence = cur_x[i - hf_win : i +sequence_len + hf_win]
+            x_seq = []
+            for j in range(sequence_len):
+                frame_window = cur_x_sequence[j : j + window_size]
+                frame_window =  np.expand_dims(frame_window, axis = 2)
+                x_seq.append(frame_window)
+            x_seq=np.expand_dims(np.array(x_seq), axis = 0)
+            yield x_seq
+
+    @staticmethod
+    def __inferencelen__(filename, sequence_len):
+        datafile = np.load(filename, mmap_mode='r')
+        size = datafile.shape[0]
+        return size//sequence_len
+
+
 
     
