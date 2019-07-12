@@ -1,25 +1,63 @@
 from mido import MidiFile, MidiTrack, Message as MidiMessage
+import numpy as np
 
+import os
 
-# creds to https://github.com/craffel/pretty-midi/issues/125
-def piano_roll_to_midi(piano_roll, base_note=21):
-    """Convert piano roll to a MIDI file."""
+import pretty_midi
+
+# creds to pretty_midi author https://github.com/craffel/pretty-midi/blob/master/examples/reverse_pianoroll.py
+def piano_roll_to_pretty_midi(piano_roll, fs=100, program=0):
+    '''Convert a Piano Roll array into a PrettyMidi object
+     with a single instrument.
+    Parameters
+    ----------
+    piano_roll : np.ndarray, shape=(128,frames), dtype=int
+        Piano roll of one instrument
+    fs : int
+        Sampling frequency of the columns, i.e. each column is spaced apart
+        by ``1./fs`` seconds.
+    program : int
+        The program number of the instrument.
+    Returns
+    -------
+    midi_object : pretty_midi.PrettyMIDI
+        A pretty_midi.PrettyMIDI class instance describing
+        the piano roll.
+    '''
     notes, frames = piano_roll.shape
-    midi = MidiFile()
-    track = MidiTrack()
-    midi.tracks.append(track)
-    now = 0
-    piano_roll = np.hstack((np.zeros((notes, 1)), 
-                            piano_roll, 
-                            np.zeros((notes, 1))))
+    pm = pretty_midi.PrettyMIDI()
+    instrument = pretty_midi.Instrument(program=program)
+
+    # pad 1 column of zeros so we can acknowledge inital and ending events
+    piano_roll = np.pad(piano_roll, [(0, 0), (1, 1)], 'constant')
+
+    # use changes in velocities to find note on / note off events
     velocity_changes = np.nonzero(np.diff(piano_roll).T)
+
+    # keep track on velocities and note on times
+    prev_velocities = np.zeros(notes, dtype=int)
+    note_on_time = np.zeros(notes)
+
+    itr = 0
     for time, note in zip(*velocity_changes):
+        # use time + 1 because of padding above
+        # print(time)
         velocity = piano_roll[note, time + 1]
-        message = MidiMessage(
-            type='note_on' if velocity > 0 else 'note_off', 
-            note=int(note + base_note), 
-            velocity=int(velocity * 127),
-            time=int(time - now))
-        track.append(message)
-        now = time
-    return midi
+        time = time / fs
+        if velocity > 0:
+            if prev_velocities[note] == 0:
+                note_on_time[note] = time
+                prev_velocities[note] = velocity
+        else:
+            print('{} {} {} {} '.format(prev_velocities[note],note,note_on_time[note], time))
+            pm_note = pretty_midi.Note(
+                velocity=prev_velocities[note] * 127,
+                pitch=note,
+                start=note_on_time[note],
+                end=time)
+            instrument.notes.append(pm_note)
+            prev_velocities[note] = 0
+        itr+=1
+    pm.instruments.append(instrument)
+    return pm
+
