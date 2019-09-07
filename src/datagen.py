@@ -18,6 +18,7 @@ class DataGenerator(Sequence):
         self.files = os.listdir(directory)
         self.data_size = 0
         for f in self.files:
+            print(f)
             if re.search(self.x_regex, f):
                 self.x_files.append(f)
             elif re.search(self.y_regex, f):
@@ -105,7 +106,7 @@ class DataGenerator(Sequence):
             print(y_filename)
             return y_filename
         else:
-            raise Exception
+            raise Exception('Corresponding label file not found in current processed dir')
 
 
     @staticmethod
