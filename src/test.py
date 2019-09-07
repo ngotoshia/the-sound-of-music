@@ -19,7 +19,7 @@ from src import preprocess
 from src import constants
 from src import datagen
 from src.infer import infer_from_processed
-from src.metrics import pm_to_pitches_intervals, get_f1_score_notes
+from src.metrics import pm_to_pitches_intervals, get_f1_score_notes, get_f1_score_frames
 from src import helpers
 
 def get_note_evaluation(referances, predictions):
@@ -48,6 +48,10 @@ def test(data_dir):
     note_precisions = []
     note_recalls = []
 
+    frame_f1s = []
+    frame_precisions = []
+    frame_recalls = []
+
     for sample in glob.glob(os.path.join(constants.TEST_PROCESSED_DIR, 'x_*')):
         isolated_filename = sample.split('/')[-1]
         
@@ -56,10 +60,19 @@ def test(data_dir):
         predictions = infer_from_processed(model, sample)
         
         note_precision, note_recall, note_f1 = get_note_evaluation(referances, predictions)
-
+        frame_precision, frame_recall, frame_f1 = get_f1_score_frames(referances, predictions)
+    
         note_f1s.append(note_f1)
         note_precisions.append(note_precision)
         note_recalls.append(note_recall)
+        
+        frame_f1s.append(frame_f1)
+        frame_precisions.append(frame_precision)
+        frame_recalls.append(frame_recall)
+
+    avg_frame_f1 = np.mean(frame_f1s)
+    avg_frame_precision = np.mean(frame_precisions)
+    avg_frame_recall = np.mean(frame_recalls)
 
     avg_note_f1 = np.mean(note_f1s)
     avg_note_precision = np.mean(note_precisions)
