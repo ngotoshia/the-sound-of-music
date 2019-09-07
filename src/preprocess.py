@@ -8,6 +8,8 @@ import IPython.display as ipd
 import glob
 import constants
 
+from sklearn.preprocessing import MinMaxScaler
+
 import os
 import sys
 
@@ -25,8 +27,13 @@ def preprocess_one_file_wav(x_file, ctr, directory=None):
 
     mean = np.mean(proc_input, axis=0)
     std = np.std(proc_input, axis=0)
-    proc_input_norm = proc_input
 
+
+    scaler = MinMaxScaler()
+    scaler.fit(proc_input)
+    proc_input_norm = scaler.transform(proc_input)
+
+    # proc_input_norm = proc_input
     x_out = proc_input_norm
 
     times = libr.frames_to_time(np.arange(proc_input_norm.shape[0]), sr=sample_rate, hop_length=512)
@@ -91,7 +98,9 @@ def preprocess_one_file(x_file, y_file, ctr, istrain):
     print('std is {}'.format(std.shape))
 
     # proc_input_norm = (proc_input - mean)/std
-    proc_input_norm = proc_input
+    scaler = MinMaxScaler()
+    scaler.fit(proc_input)
+    proc_input_norm = scaler.transform(proc_input)
     print('noamrlized is {}'.format(proc_input_norm.shape))
 
     x_out = proc_input_norm
