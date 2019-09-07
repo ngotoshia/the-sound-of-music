@@ -10,11 +10,13 @@ import constants
 
 from sklearn.preprocessing import MinMaxScaler
 
+import pandas as pd
 import os
 import sys
 
 def get_corresponding_y(x_f):
-    y_file = x_f.split('.')[0] + '.midi'
+    y_file = os.path.splitext(x_f)[0] + '.midi'
+    print(y_file)
     return y_file
 
 def preprocess_one_file_wav(x_file, ctr, directory=None):
@@ -155,15 +157,28 @@ def preprocess_files(dirname, x_files, istrain=True):
         preprocess_one_file(x_f, y_f, ctr, istrain)
         ctr+=1
 
-def preprocess(data_path):
-    test_path = os.path.join(data_path, 'test')
-    train_path = os.path.join(data_path, 'train')
 
-    test_files = glob.glob(os.path.join(test_path, '*.wav'))
-    train_files = glob.glob(os.path.join(train_path, '*.wav'))
+def preprocess(data_path, isTrain):
+#     test_path = os.path.join(data_path, 'test')
+    all_data  = pd.read_csv(os.path.join(data_path,'maestro-v2.0.0.csv'))
+    data_split = pd.Series(all_data.split.values,index=all_data.audio_filename).to_dict()
+    train_path = os.path.join(data_path)
 
-    preprocess_files(train_path, train_files, istrain=True)
-    preprocess_files(test_path, test_files, istrain=False)
+    _filter = 'train'
+    if not isTrain:
+        _filter = 'test'
+
+#     test_files = glob.glob(os.path.join(test_path, '*.wav'))
+    train_files = []
+    for year in os.listdir(train_path):
+        if os.path.isdir(os.path.join(train_path, year)):
+            train_files += [file for file in glob.glob(os.path.join(train_path, year, '*.wav')) if (data_split["/".join(file.split('/')[-2:])]==_filter)]
+    train_files += [file for file in glob.glob(os.path.join(train_path, '*.wav')) if (data_split["/".join(file.split('/')[-2:])]==_filter)]
+    preprocess_files(train_path, train_files, istrain=isTrain)
 
 if __name__ == '__main__':
-    preprocess(sys.argv[1])
+    isTrain = True
+    if len(sys.argv) == 3:
+        if sys.argv[2] == '-f':
+            isTrain = False
+    preprocess(sys.argv[1], isTrain)

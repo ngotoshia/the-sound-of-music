@@ -1,8 +1,8 @@
 import librosa as libr
 
 
-TRAIN_PROCESSED_DIR = './train_data_proc'
-TEST_PROCESSED_DIR = './test_data_proc'
+TRAIN_PROCESSED_DIR = '../train_data_proc'
+TEST_PROCESSED_DIR = '../test_data_proc'
 
 MIN_MIDI = 21 # A0
 MAX_MIDI = 108 # C8
