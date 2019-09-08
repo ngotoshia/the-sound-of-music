@@ -30,7 +30,8 @@ def get_model():
     model.add(TimeDistributed(Dense(200)))
     model.add(Dropout(0.5))
 
-    model.add(Bidirectional(LSTM(128, return_sequences=True, dropout=0.5), merge_mode ='ave'))
+    #model.add(Bidirectional(LSTM(128, return_sequences=True, dropout=0.5), merge_mode ='ave'))
+    model.add(Bidirectional(GRU(128, return_sequences=True, dropout=0.5), merge_mode ='ave'))
 
     model.add(TimeDistributed(Dense(constants.INFERED_NOTE_N, activation='sigmoid')))
     model.compile(loss='categorical_crossentropy', optimizer='adam')
