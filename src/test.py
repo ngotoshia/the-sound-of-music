@@ -78,5 +78,10 @@ def test(data_dir):
     avg_note_precision = np.mean(note_precisions)
     avg_note_recall = np.mean(note_recalls)
 
+    print('Frame:')
+    print([avg_frame_precision, avg_frame_recall, avg_frame_f1])
+    print('Note:')
+    print([avg_note_precision, avg_note_recall, avg_note_f1])
+
 if __name__ == '__main__':
     test(sys.argv[1])

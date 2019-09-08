@@ -1,6 +1,10 @@
 import mir_eval
 import numpy as np
 import constants
+from sklearn.metrics import precision_recall_fscore_support
+
+import tensorflow as tf
+import pretty_midi
 
 def pm_to_pitches_intervals(pm,min_midi_pitch=constants.MIN_MIDI,
                                  max_midi_pitch=constants.MAX_MIDI):
@@ -21,17 +25,15 @@ def pm_to_pitches_intervals(pm,min_midi_pitch=constants.MIN_MIDI,
 
 def get_f1_score_notes(ref_intervals, ref_pitches, est_intervals, est_pitches):
 
-    precision, recall, f1, _ = mir_eval.transcription.precision_recall_f1_overlap(ref_intervals, ref_pitches, est_intervals, est_pitches, offset_ratio=None)
+    precision, recall, f1, _ = mir_eval.transcription.precision_recall_f1_overlap(ref_intervals,
+                                                                                 pretty_midi.note_number_to_hz(ref_pitches), 
+                                                                                est_intervals, 
+                                                                                pretty_midi.note_number_to_hz(est_pitches),
+                                                                                 offset_ratio=None)
 
     return precision, recall, f1
 
 def get_f1_score_frames(ref_frames, est_frames):
-    frame_true_positives = np.sum(np.logical_and(ref_frames==1, est_frames==1).astype(float))
-    frame_false_positives = np.sum(np.logical_and(ref_frames==0, est_frames==1).astype(float))
-    frame_false_negatives = np.sum(np.logical_and(ref_frames==1, est_frames==0).astype(float))
-
-    precision = frame_true_positives/(frame_false_positives + frame_true_positives)
-    recall = frame_true_positives/(frame_false_negatives + frame_true_positives)
-    f1 = 2 * (precision * recall) / (precision + recall)
-
+    precision, recall, f1, _ = precision_recall_fscore_support(ref_frames.flatten(), est_frames.flatten())
     return precision, recall, f1
+
